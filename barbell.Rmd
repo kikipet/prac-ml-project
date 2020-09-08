@@ -1,0 +1,60 @@
+---
+title: Barbell Lifts
+---
+
+## Introduction
+
+## Data
+```{r data}
+library(caret)
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", "training.csv", "curl")
+training <- read.csv("training.csv")
+summary(training$classe)
+```
+<!-- Methods of lifting:
+exactly according to the specification (Class A)
+throwing the elbows to the front (Class B)
+lifting the dumbbell only halfway (Class C)
+lowering the dumbbell only halfway (Class D)
+throwing the hips to the front (Class E) -->
+The source of the data is http://groupware.les.inf.puc-rio.br/har. 152 variables were tracked over 5 different methods of performing a barbell lift, 
+including the acceleration and pitch/roll/yaw of different parts of the arm, a total of 19622 samples.
+
+## Building the model
+```{r train, cache=TRUE}
+inTrain = createDataPartition(training$classe, p = 0.8)[[1]]
+tr = training[inTrain, ]
+cv = training[-inTrain, ]
+rf12 <- train(classe ~ accel_arm_x + accel_arm_y + accel_arm_z + accel_forearm_x + accel_forearm_y + accel_forearm_z + 
+    accel_dumbbell_x + accel_dumbbell_y + accel_dumbbell_z + pitch_belt + accel_belt_x + accel_belt_y + accel_belt_z, 
+    data=tr, method="rf", na.action=na.exclude)
+rf12
+```
+80% of the given training data was used for training the model, and the remaining 20% was used as cross-validation.
+The model built here is a random forest model, using the following variables as predictors for lift type.
+
+ * Arm acceleration in x, y, z directions
+
+ * Forearm acceleration in x, y, z directions
+
+ * Dumbbell acceleration in x, y, z directions
+
+ * Belt acceleration in x, y, z directions
+
+ These variables sought to cover all of the monitored parts of the test subjects when they were lifting, and the different directions of acceleration were to
+  address the range of motion associated with each form of barbell lift.
+
+## Cross-Validation
+```{r cross, cache=TRUE}
+pr <- predict(rf12, cv)
+sprintf("Error = %0.4f", sum(pr != cv$classe)/length(cv$classe))
+```
+Of the 3923 data points used for cross-validation, the model has an error rate of 3.11%.
+
+## Test Cases
+```{r test}
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", "testing.csv", "curl")
+testing <- read.csv("testing.csv")
+predict(rf12, testing)
+```
+Within the test set of 20 samples, all 20 were correctly predicted using this model.
