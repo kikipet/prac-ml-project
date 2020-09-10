@@ -390,27 +390,30 @@ training &lt;- read.csv(&quot;training.csv&quot;)
 summary(training$classe)</code></pre>
 <pre><code>##    A    B    C    D    E 
 ## 5580 3797 3422 3216 3607</code></pre>
-<!-- Methods of lifting:
-exactly according to the specification (Class A)
-throwing the elbows to the front (Class B)
-lifting the dumbbell only halfway (Class C)
-lowering the dumbbell only halfway (Class D)
-throwing the hips to the front (Class E) -->
-<p>The source of the data is <a href="http://groupware.les.inf.puc-rio.br/har" class="uri">http://groupware.les.inf.puc-rio.br/har</a>. 152 variables were tracked over 5 different methods of performing a barbell lift, including the acceleration and pitch/roll/yaw of different parts of the arm, a total of 19622 samples.</p>
+<p>The source of the data is <a href="http://groupware.les.inf.puc-rio.br/har" class="uri">http://groupware.les.inf.puc-rio.br/har</a>. 152 variables were tracked over 5 different methods of performing a barbell lift, including the acceleration and pitch/roll/yaw of different parts of the arm, a total of 19622 samples. These methods of lifting are:</p>
+<ul>
+<li>exactly according to the specification (Class A)</li>
+<li>throwing the elbows to the front (Class B)</li>
+<li>lifting the dumbbell only halfway (Class C)</li>
+<li>lowering the dumbbell only halfway (Class D)</li>
+<li>throwing the hips to the front (Class E)</li>
+</ul>
 </div>
 <div id="building-the-model" class="section level2">
 <h2>Building the model</h2>
-<pre class="r"><code>inTrain = createDataPartition(training$classe, p = 0.8)[[1]]
+<pre class="r"><code>set.seed(98)
+inTrain = createDataPartition(training$classe, p = 0.8)[[1]]
 tr = training[inTrain, ]
 cv = training[-inTrain, ]
-rf12 &lt;- train(classe ~ accel_arm_x + accel_arm_y + accel_arm_z + accel_forearm_x + accel_forearm_y + accel_forearm_z + 
-    accel_dumbbell_x + accel_dumbbell_y + accel_dumbbell_z + pitch_belt + accel_belt_x + accel_belt_y + accel_belt_z, 
-    data=tr, method=&quot;rf&quot;, na.action=na.exclude)
-rf12</code></pre>
+rf &lt;- train(classe ~ accel_arm_x + accel_arm_y + accel_arm_z + roll_arm + accel_forearm_x + 
+  accel_forearm_y + accel_forearm_z + accel_dumbbell_x + accel_dumbbell_y + accel_dumbbell_z + 
+  roll_belt + accel_belt_x + accel_belt_y + accel_belt_z, data=tr, 
+  method=&quot;rf&quot;, na.action=na.exclude)
+rf</code></pre>
 <pre><code>## Random Forest 
 ## 
 ## 15699 samples
-##    13 predictor
+##    14 predictor
 ##     5 classes: &#39;A&#39;, &#39;B&#39;, &#39;C&#39;, &#39;D&#39;, &#39;E&#39; 
 ## 
 ## No pre-processing
@@ -419,34 +422,35 @@ rf12</code></pre>
 ## Resampling results across tuning parameters:
 ## 
 ##   mtry  Accuracy   Kappa    
-##    2    0.9572928  0.9459670
-##    7    0.9517437  0.9389536
-##   13    0.9356825  0.9186340
+##    2    0.9678993  0.9594063
+##    8    0.9603793  0.9499027
+##   14    0.9477546  0.9339317
 ## 
 ## Accuracy was used to select the optimal model using the largest value.
 ## The final value used for the model was mtry = 2.</code></pre>
 <p>80% of the given training data was used for training the model, and the remaining 20% was used as cross-validation. The model built here is a random forest model, using the following variables as predictors for lift type.</p>
 <ul>
-<li><p>Arm acceleration in x, y, z directions</p></li>
-<li><p>Forearm acceleration in x, y, z directions</p></li>
-<li><p>Dumbbell acceleration in x, y, z directions</p></li>
-<li><p>Belt acceleration in x, y, z directions</p></li>
+<li>Arm acceleration in x, y, z directions</li>
+<li>Forearm acceleration in x, y, z directions</li>
+<li>Dumbbell acceleration in x, y, z directions</li>
+<li>Belt acceleration in x, y, z directions</li>
+<li>Roll of arm, belt</li>
 </ul>
 <p>These variables sought to cover all of the monitored parts of the test subjects when they were lifting, and the different directions of acceleration were to address the range of motion associated with each form of barbell lift.</p>
 </div>
 <div id="cross-validation" class="section level2">
 <h2>Cross-Validation</h2>
-<pre class="r"><code>pr &lt;- predict(rf12, cv)
+<pre class="r"><code>pr &lt;- predict(rf, cv)
 sprintf(&quot;Error = %0.4f&quot;, sum(pr != cv$classe)/length(cv$classe))</code></pre>
-<pre><code>## [1] &quot;Error = 0.0311&quot;</code></pre>
+<pre><code>## [1] &quot;Error = 0.0275&quot;</code></pre>
 <p>Of the 3923 data points used for cross-validation, the model has an error rate of 3.11%.</p>
 </div>
 <div id="test-cases" class="section level2">
 <h2>Test Cases</h2>
 <pre class="r"><code>download.file(&quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&quot;, &quot;testing.csv&quot;, &quot;curl&quot;)
 testing &lt;- read.csv(&quot;testing.csv&quot;)
-predict(rf12, testing)</code></pre>
-<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
+predict(rf, testing)</code></pre>
+<pre><code>##  [1] B A C A A E D D A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
 <p>Within the test set of 20 samples, all 20 were correctly predicted using this model.</p>
 </div>
