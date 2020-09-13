@@ -381,11 +381,14 @@ summary {
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
+<p>Researchers are attempting to classify different types of one particular action based on the movement of different body parts. Here, an attempt is made to distinguish between several methods of lifting a barbell.</p>
 </div>
 <div id="data" class="section level2">
 <h2>Data</h2>
-<pre class="r"><code>library(caret)
-download.file(&quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;, &quot;training.csv&quot;, &quot;curl&quot;)
+<pre class="r"><code>library(caret)</code></pre>
+<pre><code>## Loading required package: lattice</code></pre>
+<pre><code>## Loading required package: ggplot2</code></pre>
+<pre class="r"><code>download.file(&quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;, &quot;training.csv&quot;, &quot;curl&quot;)
 training &lt;- read.csv(&quot;training.csv&quot;)
 summary(training$classe)</code></pre>
 <pre><code>##    A    B    C    D    E 
@@ -405,10 +408,15 @@ summary(training$classe)</code></pre>
 inTrain = createDataPartition(training$classe, p = 0.8)[[1]]
 tr = training[inTrain, ]
 cv = training[-inTrain, ]
-rf &lt;- train(classe ~ accel_arm_x + accel_arm_y + accel_arm_z + roll_arm + accel_forearm_x + 
-  accel_forearm_y + accel_forearm_z + accel_dumbbell_x + accel_dumbbell_y + accel_dumbbell_z + 
-  roll_belt + accel_belt_x + accel_belt_y + accel_belt_z, data=tr, 
-  method=&quot;rf&quot;, na.action=na.exclude)
+ctrl &lt;- trainControl(method=&quot;boot_all&quot;)
+rf &lt;- train(classe ~ accel_arm_x + accel_arm_y + accel_arm_z + roll_arm + accel_forearm_x +
+ accel_forearm_y + accel_forearm_z + accel_dumbbell_x + accel_dumbbell_y + accel_dumbbell_z +
+ roll_belt + accel_belt_x + accel_belt_y + accel_belt_z, data=tr,
+ method=&quot;rf&quot;, na.action=na.exclude)
+# rf &lt;- train(classe ~ accel_arm_x + accel_arm_y + accel_arm_z + roll_arm + accel_forearm_x + 
+#   accel_forearm_y + accel_forearm_z + accel_dumbbell_x + accel_dumbbell_y + accel_dumbbell_z + 
+#   roll_belt + accel_belt_x + accel_belt_y + accel_belt_z + var_accel_arm + var_accel_forearm, data=tr, 
+#   method=&quot;rf&quot;, na.action=na.exclude, trControl=ctrl)
 rf</code></pre>
 <pre><code>## Random Forest 
 ## 
@@ -437,13 +445,14 @@ rf</code></pre>
 <li>Roll of arm, belt</li>
 </ul>
 <p>These variables sought to cover all of the monitored parts of the test subjects when they were lifting, and the different directions of acceleration were to address the range of motion associated with each form of barbell lift.</p>
+<p>More predictors were attempted, but as the random forest method in R takes much smaller bootstrap samples with additional predictors the accuracy dropped.</p>
 </div>
 <div id="cross-validation" class="section level2">
 <h2>Cross-Validation</h2>
 <pre class="r"><code>pr &lt;- predict(rf, cv)
 sprintf(&quot;Error = %0.4f&quot;, sum(pr != cv$classe)/length(cv$classe))</code></pre>
 <pre><code>## [1] &quot;Error = 0.0275&quot;</code></pre>
-<p>Of the 3923 data points used for cross-validation, the model has an error rate of 3.11%.</p>
+<p>Of the 3923 data points used for cross-validation, the model has an error rate of 2.75%.</p>
 </div>
 <div id="test-cases" class="section level2">
 <h2>Test Cases</h2>
@@ -452,7 +461,7 @@ testing &lt;- read.csv(&quot;testing.csv&quot;)
 predict(rf, testing)</code></pre>
 <pre><code>##  [1] B A C A A E D D A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
-<p>Within the test set of 20 samples, all 20 were correctly predicted using this model.</p>
+<p>Within the test set of 20 samples, 18 out of 20 were correctly predicted using this model.</p>
 </div>
 
 
